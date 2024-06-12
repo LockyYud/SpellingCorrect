@@ -54,12 +54,11 @@ class ModelSC(nn.Module):
     def forward(self, *inputs):
         char_input_ids, bert_input_ids, masked_positions = inputs
         key_mask_padding = bert_input_ids != 1
-        output_bertEncoder = self.EncoderBERTpretrain(bert_input_ids)
         output_charEncoder = self.EncoderCharacter(char_input_ids, key_mask_padding)
         output_charEncoder = output_charEncoder.view(
-            output_bertEncoder.size(0), output_bertEncoder.size(1), -1
+            bert_input_ids.size(0), bert_input_ids.size(1), -1
         )
-        output = torch.cat((output_bertEncoder, output_charEncoder), dim=-1)
+        output = self.EncoderBERTpretrain(bert_input_ids, output_charEncoder)
         output = output[masked_positions]
         output = self.linear(output)
         return output

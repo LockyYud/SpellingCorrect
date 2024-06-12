@@ -5,7 +5,7 @@ from SelfAttention import SelfAttention
 from PositionalEmbedding import PositionalEmbedding
 
 
-class ElectraSC(nn.Module):
+class DetectModel(nn.Module):
     def __init__(
         self,
         embed_dim,
@@ -14,12 +14,11 @@ class ElectraSC(nn.Module):
         vocab_size,
         num_layer,
         device,
+        phobert_embed,
         dropout_rate=0.1,
     ):
         super().__init__()
-        self.embedding_layer = PositionalEmbedding(
-            vocab_size=vocab_size, d_model=embed_dim
-        ).to(device)
+        self.embedding_layer = phobert_embed
         self.encoder_layers = nn.ModuleList(
             [
                 EncoderLayer(
@@ -32,14 +31,14 @@ class ElectraSC(nn.Module):
             ]
         )
         self.classifier_layer = nn.Sequential(
-            nn.Linear(embed_dim, 128, bias=True),
-            nn.ReLU(),
-            nn.Linear(128, 2, bias=True),
+            nn.Linear(embed_dim, dff, bias=True),
+            nn.Linear(dff, 2, bias=True),
             nn.Softmax(dim=1),
         )
 
     def forward(self, x):
+        key_maks_padding = x == 1
         x = self.embedding_layer(x)
         for layer in self.encoder_layers:
-            x = layer(x)
+            x = layer(x, key_maks_padding)
         return self.classifier_layer(x)

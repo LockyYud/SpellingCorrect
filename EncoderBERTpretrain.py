@@ -10,11 +10,12 @@ class EncoderBERTpretrain(nn.Module):
         self.embedding_layer = embedding_layer.to(device)
         self.encoder_layers: nn.ModuleList = encoder_layers.to(device)
 
-    def forward(self, inputs):
-        input_ids = inputs
+    def forward(self, input_phobert_ids, embeded_char):
+        input_ids = input_phobert_ids
         attn_mask = input_ids != 1
         attn_mask = attn_mask[:, None, None, :]
-        output = self.embedding_layer(input_ids)
+        embeded_phobert = self.embedding_layer(input_ids)
+        output = torch.cat((embeded_phobert, embeded_char), dim=-1)
         for layer in self.encoder_layers:
             output = layer(output, attention_mask=attn_mask)[0]
         return output

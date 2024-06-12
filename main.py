@@ -3,14 +3,14 @@ from DataBuilder import DataBuilderForElectra
 from transformers import AutoTokenizer, RobertaForMaskedLM
 from CustomDataset import CustomDataset
 from torch.utils.data import DataLoader
-from ElectraSC import ElectraSC
+from DetectModel import DetectModel
 from CustomDataset import CustomDataset
 import random
 
 tokenizer = AutoTokenizer.from_pretrained("vinai/phobert-base-v2")
 phobert = RobertaForMaskedLM.from_pretrained("vinai/phobert-base-v2")
 device = torch.device("cpu")
-modelElectraSC = ElectraSC(
+modelElectraSC = DetectModel(
     embed_dim=768,
     num_heads=4,
     dff=128,
