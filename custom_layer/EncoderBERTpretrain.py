@@ -1,7 +1,7 @@
 import torch
 from torch import nn
-from PositionalEmbedding import PositionalEmbedding
-from EncoderLayer import EncoderLayer
+from transformer.PositionalEmbedding import PositionalEmbedding
+from transformer.EncoderLayer import EncoderLayer
 
 
 class EncoderBERTpretrain(nn.Module):
@@ -10,12 +10,11 @@ class EncoderBERTpretrain(nn.Module):
         self.embedding_layer = embedding_layer.to(device)
         self.encoder_layers: nn.ModuleList = encoder_layers.to(device)
 
-    def forward(self, input_phobert_ids, embeded_char):
+    def forward(self, input_phobert_ids):
         input_ids = input_phobert_ids
         attn_mask = input_ids != 1
         attn_mask = attn_mask[:, None, None, :]
-        embeded_phobert = self.embedding_layer(input_ids)
-        output = torch.cat((embeded_phobert, embeded_char), dim=-1)
+        output = self.embedding_layer(input_ids)
         for layer in self.encoder_layers:
             output = layer(output, attention_mask=attn_mask)[0]
         return output

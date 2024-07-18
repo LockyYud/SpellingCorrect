@@ -1,14 +1,14 @@
 import torch
 import torch.nn as nn
-from DataBuilder import DataBuilderForElectra
+from ultis.DataBuilderElectra import DataBuilderForElectra
 from torch.utils.data import DataLoader
 from transformers import RobertaForMaskedLM, AutoTokenizer
-from CustomDataset import CustomDataset
+from ultis.CustomDataset import CustomDataset
 import os
 import time
 import random
 from torch.utils.data import TensorDataset
-from DetectModel import DetectModel
+from model.DetectModel import DetectModel
 
 batch_size = 150
 
@@ -28,7 +28,9 @@ data_builder = DataBuilderForElectra(
 )
 input_original, input_masked = data_builder.build_data(sentences)
 train_dataset = TensorDataset(input_original, input_masked)
-train_dataloader = DataLoader(dataset=train_dataset, batch_size=100, shuffle=True)
+train_dataloader = DataLoader(
+    dataset=train_dataset, batch_size=batch_size, shuffle=True
+)
 
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")

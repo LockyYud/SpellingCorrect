@@ -1,10 +1,10 @@
 import torch
-from DataBuilder import DataBuilderForElectra
+from ultis.DataBuilderElectra import DataBuilderForElectra
 from transformers import AutoTokenizer, RobertaForMaskedLM
-from CustomDataset import CustomDataset
+from ultis.CustomDataset import CustomDataset
 from torch.utils.data import DataLoader
-from DetectModel import DetectModel
-from CustomDataset import CustomDataset
+from model.DetectModel import DetectModel
+from ultis.CustomDataset import CustomDataset
 import random
 
 tokenizer = AutoTokenizer.from_pretrained("vinai/phobert-base-v2")

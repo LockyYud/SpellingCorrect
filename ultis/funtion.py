@@ -1,4 +1,4 @@
-from CreateVocab import CreateVocab
+from ultis.CreateVocab import CreateVocab
 from utils import write_list_data_to_file
 import pandas as pd
 

@@ -1,6 +1,6 @@
 import collections
 import random
-from Tokenizer import Tokenizer
+from ultis.Tokenizer import Tokenizer
 import torch
 from utils import special_char
 
@@ -13,12 +13,10 @@ class DataBuilder:
         mask_token,
         seq_max_length,
         word_max_length,
-        bert_tokenizer,
         custom_tokenizer: Tokenizer,
         char_tokenizer: Tokenizer,
     ):
         self.rng = rng
-        self.bert_tokenizer = bert_tokenizer
         self.custom_tokenizer = custom_tokenizer
         self.char_tokenizer = char_tokenizer
         self.word_max_length = word_max_length
@@ -28,10 +26,10 @@ class DataBuilder:
 
     def build_data(self, inputs):
         char_input_ids = self._build_char_ids(inputs=inputs)
-        phobert_word_ids, mask_token_positions, target = self._build_masked_token(
+        word_input_ids, mask_token_positions, target = self._build_masked_token(
             inputs=inputs
         )
-        return char_input_ids, phobert_word_ids, mask_token_positions, target
+        return char_input_ids, word_input_ids, mask_token_positions, target
 
     def _build_char_ids(self, inputs):
         char_ids = []
@@ -54,7 +52,7 @@ class DataBuilder:
         return torch.tensor(char_ids)
 
     def _build_masked_token(self, inputs):
-        phobert_word_ids = []
+        word_input_ids = []
         mask_token_positions = []
         target = []
         for seq in inputs:
@@ -70,15 +68,15 @@ class DataBuilder:
                 max_predictions_per_seq=5,
             )
             seq_word_ids = self.bert_tokenizer.convert_tokens_to_ids(tokens)
-            phobert_word_ids.append(
+            word_input_ids.append(
                 padding(seq_word_ids, self.seq_max_length, self.padding_id)
             )
             masked_tensor = torch.zeros(self.seq_max_length, dtype=bool)
             masked_tensor[masked_positions] = True
             mask_token_positions.append(masked_tensor)
-            target.append(self.custom_tokenizer.convert_tokens_to_ids(masked_label))
+            target.sappend(self.custom_tokenizer.convert_tokens_to_ids(masked_label))
         return (
-            torch.tensor(phobert_word_ids),
+            torch.tensor(word_input_ids),
             torch.stack(mask_token_positions),
             target,
         )
@@ -112,10 +110,10 @@ def create_masked_char_input(
 
 
 def create_masked_lm_predictions(
-    tokens,
+    tokens: list,
     masked_lm_prob,
     max_predictions_per_seq,
-    vocab_words,
+    vocab_words: dict,
     rng,
     cls_token="<cls>",
     sep_token="<sep>",
@@ -127,33 +125,25 @@ def create_masked_lm_predictions(
     for i, token in enumerate(tokens):
         if token == cls_token or token == sep_token:
             continue
-        cand_indexes.append([i])
+        cand_indexes.append(i)
 
     rng.shuffle(cand_indexes)
 
-    output_tokens = list(tokens)
+    output_tokens = []
 
     num_to_predict = min(
         max_predictions_per_seq, max(1, int(round(len(tokens) * masked_lm_prob)))
     )
-
-    masked_lms = []
+    list_masked_lms = []
+    list_masked_lm_positions = []
+    list_masked_lm_labels = []
     covered_indexes = set()
-    for index_set in cand_indexes:
-        if len(masked_lms) >= num_to_predict:
-            break
-        # If adding a whole-word mask would exceed the maximum number of
-        # predictions, then just skip this candidate.
-        if len(masked_lms) + len(index_set) > num_to_predict:
-            continue
-        is_any_index_covered = False
-        for index in index_set:
+    while len(covered_indexes) < len(cand_indexes):
+        masked_lms = []
+        tokens_masked = list(tokens)
+        for index in cand_indexes:
             if index in covered_indexes:
-                is_any_index_covered = True
-                break
-        if is_any_index_covered:
-            continue
-        for index in index_set:
+                continue
             covered_indexes.add(index)
 
             masked_token = None
@@ -168,16 +158,19 @@ def create_masked_lm_predictions(
                 else:
                     masked_token = vocab_words[rng.randint(0, len(vocab_words) - 1)]
 
-            output_tokens[index] = masked_token
-
+            tokens_masked[index] = masked_token
             masked_lms.append(MaskedLmInstance(index=index, label=tokens[index]))
-    assert len(masked_lms) <= num_to_predict
-    masked_lms = sorted(masked_lms, key=lambda x: x.index)
+            if len(masked_lms) >= num_to_predict:
+                masked_lms = sorted(masked_lms, key=lambda x: x.index)
+                masked_lm_positions = []
+                masked_lm_labels = []
+                for p in masked_lms:
+                    masked_lm_positions.append(p.index)
+                    masked_lm_labels.append(p.label)
+                break
+        output_tokens.append(tokens_masked)
+        list_masked_lms.append(masked_lms)
+        list_masked_lm_positions.append(masked_lm_positions)
+        list_masked_lm_labels.append(masked_lm_labels)
 
-    masked_lm_positions = []
-    masked_lm_labels = []
-    for p in masked_lms:
-        masked_lm_positions.append(p.index)
-        masked_lm_labels.append(p.label)
-
-    return (output_tokens, masked_lm_positions, masked_lm_labels)
+    return (output_tokens, list_masked_lm_positions, list_masked_lm_labels)

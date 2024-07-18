@@ -1,7 +1,7 @@
 import torch
 from torch import nn
-from PositionalEmbedding import PositionalEmbedding
-from EncoderLayer import EncoderLayer
+from transformer.PositionalEmbedding import PositionalEmbedding
+from transformer.EncoderLayer import EncoderLayer
 
 
 class EncoderCharacter(nn.Module):

@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch
-from FeedForward import FeedForward
-from SelfAttention import SelfAttention
+from transformer.FeedForward import FeedForward
+from transformer.SelfAttention import SelfAttention
 
 
 class EncoderLayer(nn.Module):

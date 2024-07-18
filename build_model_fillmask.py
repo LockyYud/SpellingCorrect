@@ -1,13 +1,13 @@
 import torch
 import torch.nn as nn
 import utils
-import funtion
-from SCModel import ModelSC
+import ultis.funtion as funtion
+from model.SCModel import ModelSC
 from torch.utils.data import DataLoader
 from transformers import RobertaForMaskedLM, AutoTokenizer
-from CustomDataset import CustomDataset
-from data_builder import DataBuilder
-from Tokenizer import Tokenizer
+from ultis.CustomDataset import CustomDataset
+from ultis.DataBuilder import DataBuilder
+from ultis.Tokenizer import Tokenizer
 import os
 import time
 import random
@@ -64,14 +64,17 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 model = ModelSC(
     character_level_d_model=256,
     word_level_d_model=768,
-    num_heads=4,
-    num_layers=6,
-    device=device,
-    dff=256,
+    num_heads_char_encoder=4,
+    num_layers_char_encoder=4,
+    num_heads_total=4,
+    num_layers_total=4,
+    dff=128,
+    encoder_total=phobert.roberta.encoder.layer[3:6],
+    character_vocab_size=len(char_tokenizer.vocab),
     word_vocab_size=len(custom_tokenizer.vocab),
     bert_embedding_layer=phobert.roberta.embeddings,
     bert_encoder_layers=phobert.roberta.encoder.layer[:3],
-    character_vocab_size=len(char_tokenizer.vocab),
+    device=device,
 )
 
 
@@ -87,7 +90,9 @@ def train_loop(dataloader, model: ModelSC, loss_fn, optimizer, device, phobert):
         pred = model(
             char_input_ids_train, phobert_word_ids_train, mask_token_positions_train
         )
-        target = torch.Tensor([item for sublist in y for item in sublist]).long()
+        target = (
+            torch.Tensor([item for sublist in y for item in sublist]).long().to(device)
+        )
         loss = loss_fn(pred, target)
         # Backpropagation
         loss.backward(retain_graph=True)
