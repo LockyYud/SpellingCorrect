@@ -73,19 +73,15 @@ class ModelSC(nn.Module):
         output_char_encoder = output_char_encoder.view(
             word_input_ids.size(0), word_input_ids.size(1), -1
         )
-
         # Encode word
         output_word_encode = self.embedding_word(word_input_ids)
-        output_word_encode = self.encoder_word()
+        # return 1
         for layer in self.encoder_word:
-            x = layer(x, key_mask_padding)
-
+            output_word_encode = layer(output_word_encode, word_input_ids == 1)
         # Combine encode
-        output = output_word_encode + output_char_encoder
+        output = torch.cat((output_word_encode, output_char_encoder), -1)
         attn_mask = word_input_ids != 1
         attn_mask = attn_mask[:, None, None, :]
-        for layer in self.encoderTotal:
-            output = layer(output, attn_mask)[0]
         output = output[masked_positions]
         output = self.linear(output)
         return output

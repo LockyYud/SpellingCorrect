@@ -25,21 +25,20 @@ class DataBuilder:
         self.mask_token = mask_token
 
     def build_data(self, inputs):
-        char_input_ids = self._build_char_ids(inputs=inputs)
-        word_input_ids, mask_token_positions, target = self._build_masked_token(
-            inputs=inputs
-        )
-        return char_input_ids, word_input_ids, mask_token_positions, target
-
-    def _build_char_ids(self, inputs):
-        char_ids = []
+        word_input_ids = []
+        mask_token_positions = []
+        target = []
+        char_input_ids = []
         for seq in inputs:
             seq_char_ids = []
-            for word in seq.split(" "):
+            seq_char = seq
+            for word in seq_char.split(" "):
                 for start_char in special_char.keys():
                     if word.startswith(start_char):
-                        seq = seq.replace(word, special_char[start_char] + word)
-            tokens = self.char_tokenizer.tokenize(seq)
+                        seq_char = seq_char.replace(
+                            word, special_char[start_char] + word
+                        )
+            tokens = self.char_tokenizer.tokenize(seq_char)
             for word in tokens:
                 word_char_ids = self.char_tokenizer.convert_tokens_to_ids(word)
                 word_char_ids = padding(
@@ -48,34 +47,67 @@ class DataBuilder:
                 seq_char_ids.append(word_char_ids)
             char_pad = padding([], self.word_max_length, self.padding_id)
             seq_char_ids = padding(seq_char_ids, self.seq_max_length, char_pad)
-            char_ids.append(seq_char_ids)
-        return torch.tensor(char_ids)
-
-    def _build_masked_token(self, inputs):
-        word_input_ids = []
-        mask_token_positions = []
-        target = []
-        for seq in inputs:
             tokens = self.custom_tokenizer.tokenize(seq)
             if len(tokens) > self.seq_max_length:
-                tokens = tokens[: self.seq_max_length]
-            tokens, masked_positions, masked_label = create_masked_lm_predictions(
-                rng=self.rng,
-                tokens=tokens,
-                vocab_words=self.custom_tokenizer.inv_vocab,
-                mask_token=self.mask_token,
-                masked_lm_prob=0.15,
-                max_predictions_per_seq=5,
-            )
-            seq_word_ids = self.bert_tokenizer.convert_tokens_to_ids(tokens)
-            word_input_ids.append(
-                padding(seq_word_ids, self.seq_max_length, self.padding_id)
-            )
-            masked_tensor = torch.zeros(self.seq_max_length, dtype=bool)
-            masked_tensor[masked_positions] = True
-            mask_token_positions.append(masked_tensor)
-            target.sappend(self.custom_tokenizer.convert_tokens_to_ids(masked_label))
+                for i in range(len(tokens) - self.seq_max_length):
+                    list_tokens = tokens[i : i + self.seq_max_length]
+                    token_masked, masked_positions, masked_label = (
+                        create_masked_lm_predictions(
+                            rng=self.rng,
+                            tokens=list_tokens,
+                            vocab_words=self.custom_tokenizer.inv_vocab,
+                            mask_token=self.mask_token,
+                            masked_lm_prob=0.15,
+                            max_predictions_per_seq=5,
+                        )
+                    )
+                    word_input_ids = word_input_ids + [
+                        self.custom_tokenizer.convert_tokens_to_ids(_)
+                        for _ in token_masked
+                    ]
+                    for _ in masked_positions:
+                        __ = torch.zeros(self.seq_max_length, dtype=bool)
+                        __[_] = True
+                        mask_token_positions.append(__)
+                    target = target + [
+                        self.custom_tokenizer.convert_tokens_to_ids(_)
+                        for _ in masked_label
+                    ]
+                    char_input_ids = char_input_ids + [
+                        seq_char_ids for _ in range(len(token_masked))
+                    ]
+            else:
+                token_masked, masked_positions, masked_label = (
+                    create_masked_lm_predictions(
+                        rng=self.rng,
+                        tokens=tokens,
+                        vocab_words=self.custom_tokenizer.inv_vocab,
+                        mask_token=self.mask_token,
+                        masked_lm_prob=0.15,
+                        max_predictions_per_seq=5,
+                    )
+                )
+                word_input_ids = word_input_ids + [
+                    padding(
+                        self.custom_tokenizer.convert_tokens_to_ids(_),
+                        max_length=self.seq_max_length,
+                        padding_id=1,
+                    )
+                    for _ in token_masked
+                ]
+                for _ in masked_positions:
+                    __ = torch.zeros(self.seq_max_length, dtype=bool)
+                    __[_] = True
+                    mask_token_positions.append(__)
+                target = target + [
+                    self.custom_tokenizer.convert_tokens_to_ids(_) for _ in masked_label
+                ]
+                char_input_ids = char_input_ids + [
+                    seq_char_ids for _ in range(len(token_masked))
+                ]
+
         return (
+            torch.tensor(char_input_ids),
             torch.tensor(word_input_ids),
             torch.stack(mask_token_positions),
             target,

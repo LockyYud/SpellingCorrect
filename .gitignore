@@ -2,3 +2,5 @@
 /data/
 /ElectraModel/
 /test.py
+*/__pycache__
+/__pycache__
