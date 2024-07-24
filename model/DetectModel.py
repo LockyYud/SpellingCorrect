@@ -32,8 +32,15 @@ class DetectModel(nn.Module):
             ]
         )
         self.classifier_layer = nn.Sequential(
+            nn.Linear(embed_dim, embed_dim),
+            nn.LayerNorm(
+                embed_dim,
+                eps=1e-05,
+                elementwise_affine=True,
+            ),
             nn.Linear(embed_dim, 2, bias=True),
-            nn.Softmax(dim=1),
+            nn.Dropout(p=dropout_rate),
+            # nn.Softmax(dim=1),
         )
 
     def forward(self, x):

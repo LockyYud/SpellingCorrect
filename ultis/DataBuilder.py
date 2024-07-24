@@ -200,6 +200,13 @@ def create_masked_lm_predictions(
                     masked_lm_positions.append(p.index)
                     masked_lm_labels.append(p.label)
                 break
+            if len(covered_indexes) == len(cand_indexes):
+                masked_lms = sorted(masked_lms, key=lambda x: x.index)
+                masked_lm_positions = []
+                masked_lm_labels = []
+                for p in masked_lms:
+                    masked_lm_positions.append(p.index)
+                    masked_lm_labels.append(p.label)
         output_tokens.append(tokens_masked)
         list_masked_lms.append(masked_lms)
         list_masked_lm_positions.append(masked_lm_positions)
