@@ -31,6 +31,17 @@ class EncoderCharacter(nn.Module):
             ]
         )
         self.device = device
+        self.encoder_word_layers = nn.ModuleList(
+            [
+                EncoderLayer(
+                    embed_dim=embed_dim,
+                    num_heads=num_heads,
+                    dropout=dropout_rate,
+                    dff=dff,
+                ).to(device)
+                for i in range(num_layers)
+            ]
+        )
 
     def forward(self, *inputs):
         # input_ids (batch_size x sentence_len x word_len)
@@ -51,5 +62,13 @@ class EncoderCharacter(nn.Module):
         output_padding.reshape(
             batch_size, sentence_len, word_len, output_padding.size(-1)
         )
-        output_padding = output_padding.mean(dim=1)
+        output_padding = output_padding.mean(dim=1).view(
+            batch_size, sentence_len, output_padding.size(-1)
+        )
+        key_mask_word_padding = torch.ones([batch_size, sentence_len]).to(
+            device=self.device
+        )
+        key_mask_word_padding[word_padding.view(batch_size, sentence_len)] = False
+        for layer in self.encoder_word_layers:
+            output_padding = layer(output_padding, key_mask_word_padding)
         return output_padding
