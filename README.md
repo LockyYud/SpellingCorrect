@@ -2,22 +2,22 @@
 
 ## Introduction
 
-This project implements a spelling corrector using the ElectraBERT model. ElectraBERT is a state-of-the-art transformer-based model known for its efficiency and effectiveness in natural language processing tasks. The spelling corrector leverages the pre-trained ElectraBERT model to identify and correct spelling errors in input text.
+This project implements a spelling corrector using the ElectraBERT model. ElectraBERT is a state-of-the-art transformer-based model known for its efficiency and effectiveness in natural language processing tasks. The spelling corrector leverages the architecture of the ElectraBERT model to identify and correct spelling errors in input text.
+
+Use the Discriminator of ElectraBERT's architecture to detect spelling errors and use the Generator to correct these errors.
 
 ## Features
 
-- **Accurate Spelling Correction**: Utilizes the powerful ElectraBERT model to provide high-accuracy corrections for misspelled words.
+- **Accurate Spelling Correction**: Utilizes the powerful ElectraBERT model to provide highly accurate corrections for individual and language-specific misspelled words.
 - **Context-Aware**: Corrects spelling mistakes based on the context of the surrounding text, ensuring meaningful and relevant suggestions.
-- **Easy Integration**: Designed to be easily integrated into various applications and workflows.
 
 ## Requirements
 
-- Python 3.6+
+- Python 3.10+
 - PyTorch
-- Transformers (Hugging Face)
 - Other dependencies listed in `requirements.txt`
 
-## Installation
+<!-- ## Installation
 
 1. Clone the repository:
 
@@ -83,4 +83,4 @@ We welcome contributions to the project. If you find a bug or have a feature req
 ## Acknowledgements
 
 - [Hugging Face Transformers](https://github.com/huggingface/transformers)
-- [ElectraBERT](https://github.com/google-research/electra)
+- [ElectraBERT](https://github.com/google-research/electra) -->
